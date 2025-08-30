@@ -149,10 +149,11 @@ void assert_failed(uint8_t *file, uint32_t line)
     propellerFR.ID = DRONE_PROPELLER_FRONT_RIGHT; // Set ID for front-right propeller
     propellerFR.Pin = GPIO_PIN_8; // Example pin for front-right propeller
     propellerFR.PropellerTimer = DRONE_PROPELLER_TIMER; // Set the timer for PWM
-    propellerFR.Channel = TIM_CHANNEL_1; // Set the timer channel for PWM
+    propellerFR.TimerChannel = TIM_CHANNEL_1; // Set the timer channel for PWM
     propellerFR.MinDutycyclePeriod = DRONE_PROPELLER_MIN_DUTYCYCLE_PERIOD - 1; // Minimum duty cycle period in microseconds
     propellerFR.MaxDutycyclePeriod = DRONE_PROPELLER_MAX_DUTYCYCLE_PERIOD - 1; // Maximum duty cycle period in microseconds
     propellerFR.CurrentDutycyclePeriode = propellerFR.MinDutycyclePeriod; // Start with minimum duty cycle
+    propellerFR.CommunicationProtocol = DRONE_PROPELLER_DSHOT_PROTOCOL; // Set communication protocol to DShot
     drone_propeller_init(&propellerFR); // Initialize front-right propeller
 
     // propellerFL.ID = DRONE_PROPELLER_FRONT_LEFT; // Set ID for front-left propeller
@@ -183,7 +184,12 @@ void assert_failed(uint8_t *file, uint32_t line)
     // drone_propeller_init(&propellerBR); // Initialize back-right propeller
 
     // Start the propellers
-    drone_propeller_start(); // Start all propellers
+    if (drone_propeller_start() != DRONE_ERROR_NONE) {
+        while (1)
+        {
+          // Wait indefinitely
+        }
+    }
 
     // Set initial speed for each propeller   
     // drone_propeller_set_speed(DRONE_PROPELLER_FRONT_RIGHT, 100); // Set speed to 0% for front-right propeller 
