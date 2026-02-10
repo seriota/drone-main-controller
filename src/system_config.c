@@ -1,6 +1,7 @@
 #include "system_config.h"
 #include "drone_propeller.h"
 #include "cmsis_os.h"
+#include "drone_task.h"
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
@@ -203,4 +204,11 @@ void propellers_init()
                                                              // drone_propeller_set_speed(DRONE_PROPELLER_FRONT_LEFT, 0); // Set speed to 0% for front-left propeller
                                                              // drone_propeller_set_speed(DRONE_PROPELLER_BACK_LEFT, 0); // Set speed to 0% for back-left propeller
                                                              // drone_propeller_set_speed(DRONE_PROPELLER_BACK_RIGHT, 0); // Set speed to 0% for back-right propeller
+}
+
+void tasks_init(void)
+{
+  osKernelInitialize();
+  osThreadNew(propeller_task, NULL, &propeller_task_attributes);
+  osKernelStart();
 }

@@ -24,5 +24,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim);
 void system_init(void);
 void gpio_init(void);
 void propellers_init(void);
+void tasks_init(void);
 
 #endif

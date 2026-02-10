@@ -23,10 +23,3 @@ void propeller_task(void *argument)
                                                                    // osDelay(5000); // Delay for 1 second
     }
 }
-
-void drone_initialize_tasks()
-{
-    osKernelInitialize();
-    osThreadNew(propeller_task, NULL, &propeller_task_attributes);
-    osKernelStart();
-}
