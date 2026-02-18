@@ -1,6 +1,9 @@
 #include "drone_imu.h"
 
 SPI_HandleTypeDef drone_imu_spi;
+DroneImuOffset_t imu_offsets = {0};
+DroneImuData_t imu_accel_calibrated = {0};
+DroneImuData_t imu_gyro_calibrated = {0};
 
 /* ---------- private helper: burst read n bytes starting at reg ---------- */
 static void drone_imu_read_burst(uint8_t reg, uint8_t *buf, uint8_t len)
