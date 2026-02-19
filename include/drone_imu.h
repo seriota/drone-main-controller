@@ -49,6 +49,8 @@
 /* Sensitivity scale factors */
 #define MPU9250_ACCEL_SENS_2G 16384.0f
 #define MPU9250_GYRO_SENS_250 131.0f
+#define MPU9250_ACCEL_SENS_4G 8192.0f
+#define MPU9250_GYRO_SENS_500 65.5f
 
 /* SPI frame helpers */
 #define MPU9250_READ_FLAG 0x80  /* MSB=1 for read  */
@@ -70,7 +72,7 @@ typedef struct
     float z;
 } DroneImuData_t;
 
-typedef struct 
+typedef struct
 {
     float accel_x;
     float accel_y;
@@ -78,8 +80,7 @@ typedef struct
     float gyro_x;
     float gyro_y;
     float gyro_z;
-} DroneImuOffset_t;  
-
+} DroneImuOffset_t;
 
 extern SPI_HandleTypeDef drone_imu_spi;
 extern DroneImuOffset_t imu_offsets;

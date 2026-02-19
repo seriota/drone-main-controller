@@ -62,18 +62,18 @@ void drone_imu_read_accel(DroneImuData_t *out)
 {
     DroneImuRaw_t raw;
     drone_imu_read_accel_raw(&raw);
-    out->x = (float)raw.x / MPU9250_ACCEL_SENS_2G;
-    out->y = (float)raw.y / MPU9250_ACCEL_SENS_2G;
-    out->z = (float)raw.z / MPU9250_ACCEL_SENS_2G;
+    out->x = (float)raw.x / MPU9250_ACCEL_SENS_4G;
+    out->y = (float)raw.y / MPU9250_ACCEL_SENS_4G;
+    out->z = (float)raw.z / MPU9250_ACCEL_SENS_4G;
 }
 
 void drone_imu_read_gyro(DroneImuData_t *out)
 {
     DroneImuRaw_t raw;
     drone_imu_read_gyro_raw(&raw);
-    out->x = (float)raw.x / MPU9250_GYRO_SENS_250;
-    out->y = (float)raw.y / MPU9250_GYRO_SENS_250;
-    out->z = (float)raw.z / MPU9250_GYRO_SENS_250;
+    out->x = (float)raw.x / MPU9250_GYRO_SENS_500;
+    out->y = (float)raw.y / MPU9250_GYRO_SENS_500;
+    out->z = (float)raw.z / MPU9250_GYRO_SENS_500;
 }
 
 void drone_imu_read_accel_calibrated(DroneImuData_t *out)
@@ -175,11 +175,11 @@ void drone_imu_init(void)
     /* Wake the device (clear SLEEP bit in PWR_MGMT_1, select PLL clock) */
     drone_imu_write_reg(MPU9250_REG_PWR_MGMT_1, 0x01);
 
-    /* Set accelerometer full-scale range to ±2g */
-    drone_imu_write_reg(MPU9250_REG_ACCEL_CONFIG, MPU9250_ACCEL_FS_2G);
+    /* Set accelerometer full-scale range to ±4g */
+    drone_imu_write_reg(MPU9250_REG_ACCEL_CONFIG, MPU9250_ACCEL_FS_4G);
 
-    /* Set gyroscope full-scale range to ±250 dps */
-    drone_imu_write_reg(MPU9250_REG_GYRO_CONFIG, MPU9250_GYRO_FS_250);
+    /* Set gyroscope full-scale range to ±500 dps */
+    drone_imu_write_reg(MPU9250_REG_GYRO_CONFIG, MPU9250_GYRO_FS_500);
 
     drone_imu_calibrate_offsets(&imu_offsets);
 
