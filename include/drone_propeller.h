@@ -2,6 +2,7 @@
 #define DRONE_PROPELLER_H
 
 #include "stm32f4xx.h"
+#include "stm32f4xx_hal.h"
 #include "system_config.h"
 #include <stdint.h>
 #include <stdbool.h>
@@ -61,9 +62,11 @@ extern DMA_HandleTypeDef drone_propeller_dma[4];
 
 extern DronePropeller_t propellerFR, propellerFL, propellerBL, propellerBR;
 
-void drone_propeller_init(DronePropeller_t *propeller);
+void drone_propeller_attach(DronePropeller_t *propeller);
 void drone_propeller_set_speed(DronePropellerChannel_t channel, uint32_t speed);
 void drone_propeller_send_dshot(DronePropellerChannel_t channel, uint32_t speed);
+void drone_propeller_disarm(void);
+void drone_propeller_init(void);
 void DMA2_Stream1_IRQHandler(void);
 void DMA2_Stream2_IRQHandler(void);
 void DMA2_Stream6_IRQHandler(void);
