@@ -118,7 +118,7 @@ void system_init(void)
   HAL_Init();
   SystemClock_Config();
   // gpio_init();
-  propellers_init();
+  drone_propeller_init();
   drone_imu_init();
 }
 
@@ -144,68 +144,6 @@ void gpio_init(void)
   GPIO_InitStruct_GPIOC.Pull = GPIO_NOPULL;
   GPIO_InitStruct_GPIOC.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct_GPIOC);
-}
-
-void propellers_init()
-{
-  propellerFR.ID = DRONE_PROPELLER_FRONT_RIGHT;       // Set ID for front-right propeller
-  propellerFR.Pin = GPIO_PIN_8;                       // Example pin for front-right propeller
-  propellerFR.PropellerTimer = DRONE_PROPELLER_TIMER; // Set the timer for PWM
-  propellerFR.TimerChannel = TIM_CHANNEL_1;           // Set the timer channel for PWM
-  // propellerFR.MinDutycyclePeriod = DRONE_PROPELLER_MIN_DUTYCYCLE_PERIOD - 1; // Minimum duty cycle period in microseconds
-  // propellerFR.MaxDutycyclePeriod = DRONE_PROPELLER_MAX_DUTYCYCLE_PERIOD - 1; // Maximum duty cycle period in microseconds
-  // propellerFR.CurrentDutycyclePeriode = propellerFR.MinDutycyclePeriod; // Start with minimum duty cycle
-  propellerFR.CommunicationProtocol = DRONE_PROPELLER_DSHOT_PROTOCOL; // Set communication protocol to DShot
-  drone_propeller_init(&propellerFR);                                 // Initialize front-right propeller
-
-  // propellerFL.ID = DRONE_PROPELLER_FRONT_LEFT; // Set ID for front-left propeller
-  // propellerFL.Pin = GPIO_PIN_9; // Example pin for front-left propeller
-  // propellerFL.PropellerTimer = DRONE_PROPELLER_TIMER; // Set the timer for PWM
-  // propellerFL.Channel = TIM_CHANNEL_2; // Set the timer channel for PWM
-  // propellerFL.MinDutycyclePeriod = 1148; // Minimum duty cycle period in microseconds
-  // propellerFL.MaxDutycyclePeriod = 1832; // Maximum duty cycle period in microseconds
-  // propellerFL.CurrentDutycyclePeriode = propellerFL.MinDutycyclePeriod; // Start with minimum duty cycle
-  // drone_propeller_init(&propellerFL); // Initialize front-left propeller
-
-  // propellerBL.ID = DRONE_PROPELLER_BACK_LEFT; // Set ID for back-left propeller
-  // propellerBL.Pin = GPIO_PIN_10; // Example pin for back-left propeller
-  // propellerBL.PropellerTimer = DRONE_PROPELLER_TIMER; // Set the timer for PWM
-  // propellerBL.Channel = TIM_CHANNEL_3; // Set the timer channel for PWM
-  // propellerBL.MinDutycyclePeriod = 1148; // Minimum duty cycle period in microseconds
-  // propellerBL.MaxDutycyclePeriod = 1832; // Maximum duty cycle period in microseconds
-  // propellerBL.CurrentDutycyclePeriode = propellerBL.MinDutycyclePeriod; // Start with minimum duty cycle
-  // drone_propeller_init(&propellerBL); // Initialize back-left propeller
-
-  // propellerBR.ID = DRONE_PROPELLER_BACK_RIGHT; // Set ID for back-right propeller
-  // propellerBR.Pin = GPIO_PIN_11; // Example pin for back-right propeller
-  // propellerBR.PropellerTimer = DRONE_PROPELLER_TIMER; // Set the timer for PWM
-  // propellerBR.Channel = TIM_CHANNEL_4; // Set the timer channel for PWM
-  // propellerBR.MinDutycyclePeriod = 1148; // Minimum duty cycle period in microseconds
-  // propellerBR.MaxDutycyclePeriod = 1832; // Maximum duty cycle period in microseconds
-  // propellerBR.CurrentDutycyclePeriode = propellerBR.MinDutycyclePeriod; // Start with minimum duty cycle
-  // drone_propeller_init(&propellerBR); // Initialize back-right propeller
-
-  // Start the propellers
-  if (drone_propeller_start() != DRONE_ERROR_NONE)
-  {
-    while (1)
-    {
-      // Wait indefinitely
-    }
-  }
-
-  // Set initial speed for each propeller
-  // drone_propeller_set_speed(DRONE_PROPELLER_FRONT_RIGHT, 100); // Set speed to 0% for front-right propeller
-  // HAL_Delay(6500); // Delay for 5 seconds
-  HAL_GPIO_WritePin(GPIOB, LED_PIN2, GPIO_PIN_SET);          // Turn on the built-in LED
-  drone_propeller_set_speed(DRONE_PROPELLER_FRONT_RIGHT, 0); // Set speed to 0% for front-right propeller
-  HAL_Delay(6000);                                           // Delay for 5 seconds
-                                                             // drone_propeller_set_speed(DRONE_PROPELLER_FRONT_RIGHT, 50);
-                                                             // drone_propeller_set_speed(DRONE_PROPELLER_FRONT_LEFT, 100); // Set speed to 0% for front-left propeller
-                                                             // HAL_Delay(9000); // Delay for 5 seconds
-                                                             // drone_propeller_set_speed(DRONE_PROPELLER_FRONT_LEFT, 0); // Set speed to 0% for front-left propeller
-                                                             // drone_propeller_set_speed(DRONE_PROPELLER_BACK_LEFT, 0); // Set speed to 0% for back-left propeller
-                                                             // drone_propeller_set_speed(DRONE_PROPELLER_BACK_RIGHT, 0); // Set speed to 0% for back-right propeller
 }
 
 void tasks_init(void)
