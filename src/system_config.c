@@ -2,6 +2,7 @@
 #include "drone_propeller.h"
 #include "cmsis_os.h"
 #include "drone_task.h"
+#include "drone_imu.h"
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
@@ -116,8 +117,9 @@ void system_init(void)
 {
   HAL_Init();
   SystemClock_Config();
-  gpio_init();
+  // gpio_init();
   drone_propeller_init();
+  drone_imu_init();
 }
 
 void gpio_init(void)
