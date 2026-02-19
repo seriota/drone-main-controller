@@ -3,14 +3,8 @@
 
 #include "stm32f4xx_hal.h"
 #include "system_config.h"
-
-/* SPI peripheral */
-#define DRONE_IMU_SPI_INSTANCE SPI1
-
-/* SPI GPIO pins (SPI1, GPIOA) */
-#define DRONE_SCK_PIN GPIO_PIN_5
-#define DRONE_MISO_PIN GPIO_PIN_6
-#define DRONE_MOSI_PIN GPIO_PIN_7
+#include "drone_spi_communication.h"
+#include "helper.h"
 
 /* Chip-select pin (manual NSS, GPIOA) */
 #define DRONE_IMU_CS_PIN GPIO_PIN_4
@@ -82,19 +76,9 @@ typedef struct
     float gyro_z;
 } DroneImuOffset_t;
 
-extern SPI_HandleTypeDef drone_imu_spi;
 extern DroneImuOffset_t imu_offsets;
 extern DroneImuData_t imu_accel_calibrated;
 extern DroneImuData_t imu_gyro_calibrated;
 
 void drone_imu_init(void);
-void drone_imu_write_reg(uint8_t reg, uint8_t data);
-uint8_t drone_imu_read_reg(uint8_t reg);
-void drone_imu_read_accel_raw(DroneImuRaw_t *out);
-void drone_imu_read_gyro_raw(DroneImuRaw_t *out);
-void drone_imu_read_accel(DroneImuData_t *out);
-void drone_imu_read_gyro(DroneImuData_t *out);
-void drone_imu_calibrate_offsets(DroneImuOffset_t *offsets);
-void drone_imu_read_accel_calibrated(DroneImuData_t *out);
-void drone_imu_read_gyro_calibrated(DroneImuData_t *out);
 #endif

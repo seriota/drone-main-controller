@@ -1,42 +1,57 @@
 #include "drone_imu.h"
 
-SPI_HandleTypeDef drone_imu_spi;
 DroneImuOffset_t imu_offsets = {0};
 DroneImuData_t imu_accel_calibrated = {0};
 DroneImuData_t imu_gyro_calibrated = {0};
 
-/* ---------- private helper: burst read n bytes starting at reg ---------- */
+/* ---------- private helper: burst read n bytes starting at reg (blocking version) ---------- */
 static void drone_imu_read_burst(uint8_t reg, uint8_t *buf, uint8_t len)
 {
-    uint8_t tx = reg | MPU9250_READ_FLAG;
+    /* Prepare TX buffer with read command */
+    spi_tx_buffer[0] = reg | MPU9250_READ_FLAG;
+
     DRONE_IMU_CS_LOW();
-    HAL_SPI_Transmit(&drone_imu_spi, &tx, 1, HAL_MAX_DELAY);
-    HAL_SPI_Receive(&drone_imu_spi, buf, len, HAL_MAX_DELAY);
+
+    /* Send register address (blocking) */
+    drone_spi_transmit_blocking(spi_tx_buffer, 1, 100);
+
+    /* Receive data (blocking) */
+    drone_spi_receive_blocking(buf, len, 100);
+
     DRONE_IMU_CS_HIGH();
 }
 
-void drone_imu_write_reg(uint8_t reg, uint8_t data)
+static void drone_imu_write_reg(uint8_t reg, uint8_t data)
 {
-    uint8_t buf[2] = {reg & MPU9250_WRITE_FLAG, data};
+    spi_tx_buffer[0] = reg & MPU9250_WRITE_FLAG;
+    spi_tx_buffer[1] = data;
+
     DRONE_IMU_CS_LOW();
-    HAL_SPI_Transmit(&drone_imu_spi, buf, 2, HAL_MAX_DELAY);
+    drone_spi_transmit_blocking(spi_tx_buffer, 2, 100);
     DRONE_IMU_CS_HIGH();
 }
 
-uint8_t drone_imu_read_reg(uint8_t reg)
+static uint8_t drone_imu_read_reg(uint8_t reg)
 {
-    uint8_t tx = reg | MPU9250_READ_FLAG;
-    uint8_t rx = 0;
+    uint8_t rx_data;
+    spi_tx_buffer[0] = reg | MPU9250_READ_FLAG;
+
     DRONE_IMU_CS_LOW();
-    HAL_SPI_Transmit(&drone_imu_spi, &tx, 1, HAL_MAX_DELAY);
-    HAL_SPI_Receive(&drone_imu_spi, &rx, 1, HAL_MAX_DELAY);
+
+    /* Send register address (blocking) */
+    drone_spi_transmit_blocking(spi_tx_buffer, 1, 100);
+
+    /* Receive register value (blocking) */
+    drone_spi_receive_blocking(&rx_data, 1, 100);
+
     DRONE_IMU_CS_HIGH();
-    return rx;
+
+    return rx_data;
 }
 
-/* ---------- raw reads (register counts, ±2g / ±250dps default) ---------- */
+/* ---------- raw reads (register counts, ±4g / ±500dps default) ---------- */
 
-void drone_imu_read_accel_raw(DroneImuRaw_t *out)
+static void drone_imu_read_accel_raw(DroneImuRaw_t *out)
 {
     uint8_t buf[6];
     /* Burst-read 6 bytes: ACCEL_XOUT_H, _L, ACCEL_YOUT_H, _L, ACCEL_ZOUT_H, _L */
@@ -46,7 +61,7 @@ void drone_imu_read_accel_raw(DroneImuRaw_t *out)
     out->z = (int16_t)((buf[4] << 8) | buf[5]);
 }
 
-void drone_imu_read_gyro_raw(DroneImuRaw_t *out)
+static void drone_imu_read_gyro_raw(DroneImuRaw_t *out)
 {
     uint8_t buf[6];
     /* Burst-read 6 bytes: GYRO_XOUT_H, _L, GYRO_YOUT_H, _L, GYRO_ZOUT_H, _L */
@@ -58,7 +73,7 @@ void drone_imu_read_gyro_raw(DroneImuRaw_t *out)
 
 /* ---------- scaled reads (g and dps) ---------- */
 
-void drone_imu_read_accel(DroneImuData_t *out)
+static void drone_imu_read_accel(DroneImuData_t *out)
 {
     DroneImuRaw_t raw;
     drone_imu_read_accel_raw(&raw);
@@ -67,7 +82,7 @@ void drone_imu_read_accel(DroneImuData_t *out)
     out->z = (float)raw.z / MPU9250_ACCEL_SENS_4G;
 }
 
-void drone_imu_read_gyro(DroneImuData_t *out)
+static void drone_imu_read_gyro(DroneImuData_t *out)
 {
     DroneImuRaw_t raw;
     drone_imu_read_gyro_raw(&raw);
@@ -76,7 +91,7 @@ void drone_imu_read_gyro(DroneImuData_t *out)
     out->z = (float)raw.z / MPU9250_GYRO_SENS_500;
 }
 
-void drone_imu_read_accel_calibrated(DroneImuData_t *out)
+static void drone_imu_read_accel_calibrated(DroneImuData_t *out)
 {
     DroneImuData_t raw;
     drone_imu_read_accel(&raw);
@@ -85,7 +100,7 @@ void drone_imu_read_accel_calibrated(DroneImuData_t *out)
     out->z = raw.z - imu_offsets.accel_z;
 }
 
-void drone_imu_read_gyro_calibrated(DroneImuData_t *out)
+static void drone_imu_read_gyro_calibrated(DroneImuData_t *out)
 {
     DroneImuData_t raw;
     drone_imu_read_gyro(&raw);
@@ -94,7 +109,7 @@ void drone_imu_read_gyro_calibrated(DroneImuData_t *out)
     out->z = raw.z - imu_offsets.gyro_z;
 }
 
-void drone_imu_calibrate_offsets(DroneImuOffset_t *offsets)
+static void drone_imu_calibrate_offsets(DroneImuOffset_t *offsets)
 {
     const int num_samples = 200;
     DroneImuData_t accel_sum = {0}, gyro_sum = {0};
@@ -123,45 +138,19 @@ void drone_imu_calibrate_offsets(DroneImuOffset_t *offsets)
 
 void drone_imu_init(void)
 {
-    /* Enable clocks */
-    __HAL_RCC_SPI1_CLK_ENABLE();
-    __HAL_RCC_GPIOA_CLK_ENABLE();
-
-    GPIO_InitTypeDef GPIO_InitStruct = {0};
-
-    /* SCK, MISO, MOSI — alternate function */
-    GPIO_InitStruct.Pin = DRONE_SCK_PIN | DRONE_MISO_PIN | DRONE_MOSI_PIN;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-    GPIO_InitStruct.Alternate = GPIO_AF5_SPI1;
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+    if (!is_spi_initialized())
+    {
+        drone_spi_init();
+    }
 
     /* CS pin — manual output, idle HIGH */
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
     GPIO_InitStruct.Pin = DRONE_IMU_CS_PIN;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStruct.Pull = GPIO_PULLUP;
     GPIO_InitStruct.Alternate = 0;
     HAL_GPIO_Init(DRONE_IMU_CS_GPIO, &GPIO_InitStruct);
     DRONE_IMU_CS_HIGH();
-
-    /* SPI peripheral config */
-    drone_imu_spi.Instance = DRONE_IMU_SPI_INSTANCE;
-    drone_imu_spi.Init.Mode = SPI_MODE_MASTER;
-    drone_imu_spi.Init.Direction = SPI_DIRECTION_2LINES;
-    drone_imu_spi.Init.DataSize = SPI_DATASIZE_8BIT;
-    drone_imu_spi.Init.CLKPolarity = SPI_POLARITY_HIGH;               // CPOL=1 (Mode 3)
-    drone_imu_spi.Init.CLKPhase = SPI_PHASE_2EDGE;                    // CPHA=1 (Mode 3)
-    drone_imu_spi.Init.NSS = SPI_NSS_SOFT;                            // CS managed manually
-    drone_imu_spi.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_128; // 84MHz/128 = ~656KHz (<1MHz limit)
-    drone_imu_spi.Init.FirstBit = SPI_FIRSTBIT_MSB;
-    drone_imu_spi.Init.TIMode = SPI_TIMODE_DISABLE;
-    drone_imu_spi.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
-
-    if (HAL_SPI_Init(&drone_imu_spi) != HAL_OK)
-    {
-        Error_Handler();
-    }
 
     /* Disable I2C interface, force SPI-only (USER_CTRL: I2C_IF_DIS) */
     drone_imu_write_reg(MPU9250_REG_USER_CTRL, 0x10);
