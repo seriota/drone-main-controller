@@ -1,22 +1,10 @@
 #include "system_config.h"
-#include "drone_propeller.h"
-#include "cmsis_os.h"
-#include "drone_task.h"
-#include "drone_imu.h"
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   if (htim->Instance == TIM3)
   {
     HAL_IncTick();
-  }
-}
-
-void Error_Handler(void)
-{
-  __disable_irq();
-  while (1)
-  {
   }
 }
 
