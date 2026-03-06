@@ -231,8 +231,7 @@ static void spi_select_device(DroneSPISensorType_t device)
         HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET); // IMU CS low
         break;
     case DRONE_SPI_SENSOR_BAROMETER:
-        // Add your barometer CS pin here
-        // HAL_GPIO_WritePin(GPIOX, GPIO_PIN_X, GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3, GPIO_PIN_RESET); // Barometer CS low
         break;
     default:
         break;
@@ -247,8 +246,7 @@ static void spi_deselect_device(DroneSPISensorType_t device)
         HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET); // IMU CS high
         break;
     case DRONE_SPI_SENSOR_BAROMETER:
-        // Add your barometer CS pin here
-        // HAL_GPIO_WritePin(GPIOX, GPIO_PIN_X, GPIO_PIN_SET);
+        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3, GPIO_PIN_SET); // Barometer CS high
         break;
     default:
         break;
@@ -288,8 +286,12 @@ static void spi_process_request(SpiRequest_t *req)
     switch (req->type)
     {
     case SPI_REQ_READ:
-        // Send register address
-        spi_tx_buffer[0] = req->reg | 0x80; // Read flag
+        // Send register address (IMU uses bit 7 as read flag; barometer uses raw commands)
+        if (req->device == DRONE_SPI_SENSOR_IMU) {
+            spi_tx_buffer[0] = req->reg | 0x80;
+        } else {
+            spi_tx_buffer[0] = req->reg;
+        }
         spi_tx_complete = false;
         drone_spi_transmit_dma(spi_tx_buffer, 1);
         xSemaphoreTake(spi_dma_semaphore, portMAX_DELAY);
@@ -307,8 +309,12 @@ static void spi_process_request(SpiRequest_t *req)
         break;
 
     case SPI_REQ_WRITE:
-        // Prepare write command
-        spi_tx_buffer[0] = req->reg & 0x7F; // Write flag
+        // Prepare write command (IMU uses bit 7 mask; barometer uses raw commands)
+        if (req->device == DRONE_SPI_SENSOR_IMU) {
+            spi_tx_buffer[0] = req->reg & 0x7F;
+        } else {
+            spi_tx_buffer[0] = req->reg;
+        }
         spi_tx_buffer[1] = req->tx_data[0];
 
         spi_tx_complete = false;
@@ -318,7 +324,11 @@ static void spi_process_request(SpiRequest_t *req)
 
     case SPI_REQ_BURST_READ:
         // Send register address
-        spi_tx_buffer[0] = req->reg | 0x80; // Read flag
+        if (req->device == DRONE_SPI_SENSOR_IMU) {
+            spi_tx_buffer[0] = req->reg | 0x80;
+        } else {
+            spi_tx_buffer[0] = req->reg;
+        }
         spi_tx_complete = false;
         drone_spi_transmit_dma(spi_tx_buffer, 1);
         xSemaphoreTake(spi_dma_semaphore, portMAX_DELAY);
@@ -333,6 +343,14 @@ static void spi_process_request(SpiRequest_t *req)
         {
             req->rx_data[i] = spi_rx_buffer[i];
         }
+        break;
+
+    case SPI_REQ_COMMAND:
+        // Send raw command byte (no read/write flag mangling)
+        spi_tx_buffer[0] = req->reg;
+        spi_tx_complete = false;
+        drone_spi_transmit_dma(spi_tx_buffer, 1);
+        xSemaphoreTake(spi_dma_semaphore, portMAX_DELAY);
         break;
     }
 
@@ -490,6 +508,41 @@ HAL_StatusTypeDef spi_manager_burst_read(DroneSPISensorType_t device, uint8_t re
     }
 
     // Wait for completion
+    if (xSemaphoreTake(completion_sem, pdMS_TO_TICKS(timeout_ms)) != pdTRUE)
+    {
+        vSemaphoreDelete(completion_sem);
+        return HAL_TIMEOUT;
+    }
+
+    vSemaphoreDelete(completion_sem);
+    return HAL_OK;
+}
+
+/* High-level API: Send command byte */
+HAL_StatusTypeDef spi_manager_send_command(DroneSPISensorType_t device, uint8_t command, uint32_t timeout_ms)
+{
+    SemaphoreHandle_t completion_sem = xSemaphoreCreateBinary();
+    if (completion_sem == NULL)
+    {
+        return HAL_ERROR;
+    }
+
+    SpiRequest_t request = {
+        .device = device,
+        .type = SPI_REQ_COMMAND,
+        .reg = command,
+        .tx_data = NULL,
+        .rx_data = NULL,
+        .length = 0,
+        .requester = NULL,
+        .completion = completion_sem};
+
+    if (xQueueSend(spi_request_queue, &request, pdMS_TO_TICKS(timeout_ms)) != pdTRUE)
+    {
+        vSemaphoreDelete(completion_sem);
+        return HAL_TIMEOUT;
+    }
+
     if (xSemaphoreTake(completion_sem, pdMS_TO_TICKS(timeout_ms)) != pdTRUE)
     {
         vSemaphoreDelete(completion_sem);

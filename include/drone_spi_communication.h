@@ -41,6 +41,7 @@ typedef enum
     SPI_REQ_READ,       // Read register(s)
     SPI_REQ_WRITE,      // Write register
     SPI_REQ_BURST_READ, // Burst read multiple bytes
+    SPI_REQ_COMMAND,    // Send single command byte (no read/write flag mangling)
 } SpiRequestType_t;
 
 /* SPI Request structure */
@@ -104,6 +105,9 @@ void drone_spi_manager_init(void);
 HAL_StatusTypeDef spi_manager_read_reg(DroneSPISensorType_t device, uint8_t reg, uint8_t *data, uint32_t timeout_ms);
 HAL_StatusTypeDef spi_manager_write_reg(DroneSPISensorType_t device, uint8_t reg, uint8_t data, uint32_t timeout_ms);
 HAL_StatusTypeDef spi_manager_burst_read(DroneSPISensorType_t device, uint8_t reg, uint8_t *buffer, uint16_t length, uint32_t timeout_ms);
+
+/* High-level API: Send command byte (no register read/write flag) */
+HAL_StatusTypeDef spi_manager_send_command(DroneSPISensorType_t device, uint8_t command, uint32_t timeout_ms);
 
 /* Get the SPI Manager task handle (for debugging/monitoring) */
 TaskHandle_t drone_spi_manager_get_task_handle(void);

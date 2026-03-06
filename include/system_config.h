@@ -7,6 +7,9 @@
 #include "cmsis_os.h"
 #include "drone_task.h"
 #include "drone_imu.h"
+#include "drone_barometer.h"
+#include "drone_uart.h"
+#include "drone_attitude.h"
 
 #define LED_PIN1 GPIO_PIN_13
 #define LED_PIN2 GPIO_PIN_12
