@@ -29,16 +29,16 @@
 #define MPU9250_REG_PWR_MGMT_1 0x6B   /* Power management        */
 
 /* Accel full-scale range options (ACCEL_CONFIG bits [4:3]) */
-#define MPU9250_ACCEL_FS_2G 0x00  /* ±2g  — 16384 LSB/g */
-#define MPU9250_ACCEL_FS_4G 0x08  /* ±4g  —  8192 LSB/g */
-#define MPU9250_ACCEL_FS_8G 0x10  /* ±8g  —  4096 LSB/g */
-#define MPU9250_ACCEL_FS_16G 0x18 /* ±16g —  2048 LSB/g */
+#define MPU9250_ACCEL_FS_2G 0x00  /* +/-2g  — 16384 LSB/g */
+#define MPU9250_ACCEL_FS_4G 0x08  /* +/-4g  —  8192 LSB/g */
+#define MPU9250_ACCEL_FS_8G 0x10  /* +/-8g  —  4096 LSB/g */
+#define MPU9250_ACCEL_FS_16G 0x18 /* +/-16g —  2048 LSB/g */
 
 /* Gyro full-scale range options (GYRO_CONFIG bits [4:3]) */
-#define MPU9250_GYRO_FS_250 0x00  /* ±250  dps — 131.0 LSB/dps */
-#define MPU9250_GYRO_FS_500 0x08  /* ±500  dps —  65.5 LSB/dps */
-#define MPU9250_GYRO_FS_1000 0x10 /* ±1000 dps —  32.8 LSB/dps */
-#define MPU9250_GYRO_FS_2000 0x18 /* ±2000 dps —  16.4 LSB/dps */
+#define MPU9250_GYRO_FS_250 0x00  /* +/-250  dps — 131.0 LSB/dps */
+#define MPU9250_GYRO_FS_500 0x08  /* +/-500  dps —  65.5 LSB/dps */
+#define MPU9250_GYRO_FS_1000 0x10 /* +/-1000 dps —  32.8 LSB/dps */
+#define MPU9250_GYRO_FS_2000 0x18 /* +/-2000 dps —  16.4 LSB/dps */
 
 /* Sensitivity scale factors */
 #define MPU9250_ACCEL_SENS_2G 16384.0f
@@ -76,9 +76,34 @@ typedef struct
     float gyro_z;
 } DroneImuOffset_t;
 
+typedef struct {
+    void (*spi_read_burst)(uint8_t reg, uint8_t *buf, uint8_t len);
+    void (*spi_write_reg)(uint8_t reg, uint8_t data);
+    uint8_t (*spi_read_reg)(uint8_t reg);
+    float accel_sensitivity;
+    float gyro_sensitivity;
+    uint8_t accel_fs_config;
+    uint8_t gyro_fs_config;
+    uint16_t calibration_samples;
+} DroneImuConfig_t;
+
+#define DRONE_IMU_DEFAULT_CONFIG {       \
+    .spi_read_burst = NULL,              \
+    .spi_write_reg = NULL,               \
+    .spi_read_reg = NULL,                \
+    .accel_sensitivity = 8192.0f,        \
+    .gyro_sensitivity = 65.5f,           \
+    .accel_fs_config = MPU9250_ACCEL_FS_4G, \
+    .gyro_fs_config = MPU9250_GYRO_FS_500,  \
+    .calibration_samples = 200,          \
+}
+
 extern DroneImuOffset_t imu_offsets;
 extern DroneImuData_t imu_accel_calibrated;
 extern DroneImuData_t imu_gyro_calibrated;
 
-void drone_imu_init(void);
+void drone_imu_init(const DroneImuConfig_t *config);
+void drone_imu_read_accel_calibrated(DroneImuData_t *out);
+void drone_imu_read_gyro_calibrated(DroneImuData_t *out);
+
 #endif

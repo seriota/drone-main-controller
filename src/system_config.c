@@ -1,4 +1,5 @@
 #include "system_config.h"
+#include "drone_spi_communication.h"
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
@@ -106,8 +107,10 @@ void system_init(void)
   HAL_Init();
   SystemClock_Config();
   // gpio_init();
+  drone_uart_init(NULL);
   drone_propeller_init();
-  drone_imu_init();
+  drone_imu_init(NULL);
+  drone_barometer_init(NULL);
 }
 
 void gpio_init(void)
@@ -136,7 +139,13 @@ void gpio_init(void)
 
 void tasks_init(void)
 {
+  drone_spi_enable_dma_interrupts();
+  drone_spi_manager_init();
+
   osKernelInitialize();
   osThreadNew(propeller_task, NULL, &propeller_task_attributes);
+  osThreadNew(imu_task, NULL, &imu_task_attributes);
+  osThreadNew(barometer_task, NULL, &barometer_task_attributes);
+  osThreadNew(sensor_fusion_task, NULL, &sensor_fusion_task_attributes);
   osKernelStart();
 }
