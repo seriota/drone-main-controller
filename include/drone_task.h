@@ -3,7 +3,7 @@
 
 #include "cmsis_os.h"
 
-osThreadId_t propeller_task_handler;
+extern osThreadId_t propeller_task_handler;
 extern const osThreadAttr_t propeller_task_attributes;
 
 extern const osThreadAttr_t imu_task_attributes;
