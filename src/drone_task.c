@@ -56,32 +56,12 @@ void imu_task(void *argument)
     {
         DroneImuData_t accel, gyro;
 
-        /* Read via SPI manager (DMA-based, RTOS-safe) */
-        uint8_t accel_buf[6];
-        if (spi_manager_burst_read(DRONE_SPI_SENSOR_IMU, MPU9250_REG_ACCEL_XOUT_H, accel_buf, 6, 100) == HAL_OK)
-        {
-            DroneImuRaw_t raw;
-            raw.x = (int16_t)((accel_buf[0] << 8) | accel_buf[1]);
-            raw.y = (int16_t)((accel_buf[2] << 8) | accel_buf[3]);
-            raw.z = (int16_t)((accel_buf[4] << 8) | accel_buf[5]);
-            accel.x = (float)raw.x / MPU9250_ACCEL_SENS_4G - imu_offsets.accel_x;
-            accel.y = (float)raw.y / MPU9250_ACCEL_SENS_4G - imu_offsets.accel_y;
-            accel.z = (float)raw.z / MPU9250_ACCEL_SENS_4G - imu_offsets.accel_z;
-            shared_accel = accel;
-        }
+        /* Read calibrated accelerometer and gyroscope data using configured sensitivities */
+        drone_imu_read_accel_calibrated(&accel);
+        shared_accel = accel;
 
-        uint8_t gyro_buf[6];
-        if (spi_manager_burst_read(DRONE_SPI_SENSOR_IMU, MPU9250_REG_GYRO_XOUT_H, gyro_buf, 6, 100) == HAL_OK)
-        {
-            DroneImuRaw_t raw;
-            raw.x = (int16_t)((gyro_buf[0] << 8) | gyro_buf[1]);
-            raw.y = (int16_t)((gyro_buf[2] << 8) | gyro_buf[3]);
-            raw.z = (int16_t)((gyro_buf[4] << 8) | gyro_buf[5]);
-            gyro.x = (float)raw.x / MPU9250_GYRO_SENS_500 - imu_offsets.gyro_x;
-            gyro.y = (float)raw.y / MPU9250_GYRO_SENS_500 - imu_offsets.gyro_y;
-            gyro.z = (float)raw.z / MPU9250_GYRO_SENS_500 - imu_offsets.gyro_z;
-            shared_gyro = gyro;
-        }
+        drone_imu_read_gyro_calibrated(&gyro);
+        shared_gyro = gyro;
 
         osDelay(2); /* ~500Hz */
     }
