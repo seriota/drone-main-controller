@@ -177,5 +177,14 @@ void drone_barometer_convert_second_order(uint32_t d1, uint32_t d2, DroneBaromet
 float drone_barometer_pressure_to_altitude(int32_t pressure_001mbar)
 {
     float pressure_mbar = (float)pressure_001mbar / 100.0f;
-    return 44330.0f * (1.0f - powf(pressure_mbar / baro_cfg.sea_level_pressure_mbar, 0.1903f));
+
+    /* Ensure a sane, non-zero sea-level pressure to avoid division by zero / NaNs */
+    float sea_level_pressure_mbar = baro_cfg.sea_level_pressure_mbar;
+    if (sea_level_pressure_mbar < 1.0f)
+    {
+        /* Fallback to standard atmosphere sea-level pressure (in mbar) */
+        sea_level_pressure_mbar = 1013.25f;
+    }
+
+    return 44330.0f * (1.0f - powf(pressure_mbar / sea_level_pressure_mbar, 0.1903f));
 }
